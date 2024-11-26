@@ -25,8 +25,7 @@ socketio = SocketIO(app)  # Initialize SocketIO
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 # Set device
-#device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-device = torch.device('cpu')
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 # Transformation applied to all images
 transform = transforms.Compose([

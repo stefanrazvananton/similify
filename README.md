@@ -1,6 +1,15 @@
+Testat pe Windows 10 si Ubuntu 24.04.1 GPU/CPU
+GPU testate: GTX 1660, GTX 1060, RTX 3080, RTX 3080 Ti
+
+Daca se ruleaza pe GPU acesta trebuie sa aiba minim 2 GB VRAM
+! De implementat selectia automata CPU daca GPU nu are minim 2
+
+
+
+Pentru a rula
 git clone
 
-testat windows 10 gpu e ok
+
 
 cd similify
 

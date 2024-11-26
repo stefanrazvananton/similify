@@ -25,7 +25,8 @@ socketio = SocketIO(app)  # Initialize SocketIO
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 # Set device
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+#device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+device = torch.device('cpu')
 
 # Transformation applied to all images
 transform = transforms.Compose([
@@ -68,14 +69,12 @@ class FeatureExtractorVGG(nn.Module):
 # Load both models and their feature databases
 # ResNet50 model and features
 resnet_model = FeatureExtractorResNet()
-#resnet_model.load_state_dict(torch.load("resnet50_cifar.pth", weights_only=True))
 resnet_model = resnet_model.to(device)
 resnet_model.eval()
 features_resnet50 = np.load('features_resnet50.npy')
 
 # VGG16 model and features
 vgg_model = FeatureExtractorVGG()
-#vgg_model.load_state_dict(torch.load("vgg16_cifar.pth", weights_only=True))
 vgg_model = vgg_model.to(device)
 vgg_model.eval()
 features_vgg16 = np.load('features_vgg16.npy')

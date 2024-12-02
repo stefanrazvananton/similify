@@ -35,7 +35,7 @@ transform = transforms.Compose([
 ])
 
 # Load CIFAR-10 dataset
-cifar10_dataset = datasets.CIFAR10(root='./data', train=False, download=True, transform=transform)
+cifar10_dataset = datasets.ImageFolder(root='imgs', transform=transform)
 
 # Define feature extractor classes
 class FeatureExtractorResNet(nn.Module):
@@ -86,7 +86,7 @@ def find_similar_images(query_features, features_db, metric):
         # Higher values mean more similar
         most_similar_indices = similarities.argsort()[-48:][::-1]
         # Retrieve most similar images and similarity scores
-        similar_images = [(cifar10_dataset.data[idx], similarities[idx]) for idx in most_similar_indices]
+        similar_images = [(cifar10_dataset.imgs[idx], similarities[idx]) for idx in most_similar_indices]
     else:
         # For distance metrics, lower values mean more similar
         if metric == 'euclidean':
@@ -99,7 +99,7 @@ def find_similar_images(query_features, features_db, metric):
         # Get indices of most similar images
         most_similar_indices = distances.argsort()[:48]
         # Retrieve most similar images and distance scores
-        similar_images = [(cifar10_dataset.data[idx], distances[idx]) for idx in most_similar_indices]
+        similar_images = [(cifar10_dataset.imgs[idx], distances[idx]) for idx in most_similar_indices]
 
     return similar_images
 
@@ -159,7 +159,8 @@ def display_results(filename):
     # Convert images to base64 to display on the webpage
     images = []
     for img_array, similarity in similar_images:
-        img = Image.fromarray(img_array)
+        #img = Image.fromarray(img_array)
+        img = Image.open(img_array[0])
         buffered = io.BytesIO()
         img.save(buffered, format="PNG")
         img_str = base64.b64encode(buffered.getvalue()).decode()
@@ -206,7 +207,8 @@ def handle_update_parameters(data):
     # Convert images to base64
     images = []
     for img_array, similarity in similar_images:
-        img = Image.fromarray(img_array)
+        #img = Image.fromarray(img_array)
+        img = Image.open(img_array[0])
         buffered = io.BytesIO()
         img.save(buffered, format="PNG")
         img_str = base64.b64encode(buffered.getvalue()).decode()

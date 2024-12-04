@@ -104,22 +104,21 @@ def find_similar_images(query_features, features_db, metric):
     return similar_images
 
 # Updated extract_features function to add noise (same as before)
-def extract_features(image, model, mu, sigma):
+def extract_features(image, model):
     with torch.no_grad():
         features = model(image)
         features = features.cpu().numpy().flatten()  # Move to CPU and convert to numpy
-        # Add Gaussian noise
-        noise = np.random.normal(mu, sigma, len(features))
-        return features + noise
+
+        return features
+
 
 @app.route('/', methods=['GET', 'POST'])
 def upload_image():
     if request.method == 'POST':
         # Check if a file was uploaded and required fields are present
-        if 'file' not in request.files or 'model' not in request.form or 'metric' not in request.form:
+        if 'file' not in request.files or 'metric' not in request.form:
             return redirect(request.url)
         file = request.files['file']
-        model_name = request.form['model']
         metric = request.form['metric']
         # If the user does not select a file, the browser submits an empty file without a filename
         if file.filename == '':
@@ -129,93 +128,51 @@ def upload_image():
             filepath = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
             file.save(filepath)
             # Redirect to the display route with the selected parameters
-            return redirect(url_for('display_results', filename=file.filename, model=model_name, metric=metric))
+            return redirect(url_for('display_results', filename=file.filename, metric=metric))
     return render_template('upload.html')
+
+
 
 @app.route('/results/<filename>')
 def display_results(filename):
-    model_name = request.args.get('model', 'resnet50')
     metric = request.args.get('metric', 'cosine')
     filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-    # Select the appropriate model and features_db
-    if model_name == 'resnet50':
-        model = resnet_model
-        features_db = features_resnet50
-    elif model_name == 'vgg16':
-        model = vgg_model
-        features_db = features_vgg16
-    else:
-        # Invalid model selected, default to ResNet50
-        model = resnet_model
-        features_db = features_resnet50
 
-    # Precompute features for the uploaded image without noise
+    # Load the query image
     query_image = Image.open(filepath).convert('RGB')
     query_image_tensor = transform(query_image).unsqueeze(0).to(device)
-    base_query_features = extract_features(query_image_tensor, model, mu=0, sigma=0)
 
-    # Initial similar images with default mu and sigma
-    similar_images = find_similar_images(base_query_features, features_db, metric)
-    # Convert images to base64 to display on the webpage
-    images = []
-    for img_array, similarity in similar_images:
-        #img = Image.fromarray(img_array)
+    # Extract features using both models without noise
+    query_features_resnet = extract_features(query_image_tensor, resnet_model)
+    query_features_vgg = extract_features(query_image_tensor, vgg_model)
+
+    # Find similar images for both models
+    similar_images_resnet = find_similar_images(query_features_resnet, features_resnet50, metric)
+    similar_images_vgg = find_similar_images(query_features_vgg, features_vgg16, metric)
+
+    # Convert images to base64 for ResNet50
+    images_resnet = []
+    for img_array, similarity in similar_images_resnet:
         img = Image.open(img_array[0])
         buffered = io.BytesIO()
         img.save(buffered, format="PNG")
         img_str = base64.b64encode(buffered.getvalue()).decode()
-        images.append({'img_data': img_str, 'similarity': f"{similarity:.4f}"})
-    
+        images_resnet.append({'img_data': img_str, 'similarity': f"{similarity:.4f}"})
+
+    # Convert images to base64 for VGG16
+    images_vgg = []
+    for img_array, similarity in similar_images_vgg:
+        img = Image.open(img_array[0])
+        buffered = io.BytesIO()
+        img.save(buffered, format="PNG")
+        img_str = base64.b64encode(buffered.getvalue()).decode()
+        images_vgg.append({'img_data': img_str, 'similarity': f"{similarity:.4f}"})
+
     # Convert the uploaded image to base64
     with open(filepath, "rb") as f:
         uploaded_image_data = base64.b64encode(f.read()).decode()
 
-    return render_template('results.html', images=images, uploaded_image=uploaded_image_data, model_name=model_name, metric=metric, filename=filename)
-
-# SocketIO event handlers
-@socketio.on('update_parameters')
-def handle_update_parameters(data):
-    mu = float(data['mu'])
-    sigma = float(data['sigma'])
-    metric = data['metric']
-    model_name = data['model']
-    filename = data['filename']
-
-    # Select the appropriate model and features_db
-    if model_name == 'resnet50':
-        model = resnet_model
-        features_db = features_resnet50
-    elif model_name == 'vgg16':
-        model = vgg_model
-        features_db = features_vgg16
-    else:
-        # Invalid model selected, default to ResNet50
-        model = resnet_model
-        features_db = features_resnet50
-
-    # Load the query image
-    filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-    query_image = Image.open(filepath).convert('RGB')
-    query_image_tensor = transform(query_image).unsqueeze(0).to(device)
-
-    # Extract features with updated mu and sigma
-    query_features = extract_features(query_image_tensor, model, mu, sigma)
-
-    # Find similar images
-    similar_images = find_similar_images(query_features, features_db, metric)
-
-    # Convert images to base64
-    images = []
-    for img_array, similarity in similar_images:
-        #img = Image.fromarray(img_array)
-        img = Image.open(img_array[0])
-        buffered = io.BytesIO()
-        img.save(buffered, format="PNG")
-        img_str = base64.b64encode(buffered.getvalue()).decode()
-        images.append({'img_data': img_str, 'similarity': f"{similarity:.4f}"})
-
-    # Send the updated images back to the client
-    emit('update_images', {'images': images})
+    return render_template('results.html', images_resnet=images_resnet, images_vgg=images_vgg, uploaded_image=uploaded_image_data, metric=metric, filename=filename)
 
 if __name__ == '__main__':
     socketio.run(app, host='0.0.0.0', port=5000, debug=True)

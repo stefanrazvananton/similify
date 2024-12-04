@@ -29,21 +29,6 @@
                     <input type="file" class="form-control-file" id="file" name="file" accept="image/*" required>
                 </div>
                 <div class="form-group">
-                    <label for="model">Selectează modelul:</label>
-                    <select class="form-control" id="model" name="model" required>
-                        <option value="resnet50">ResNet50</option>
-                        <option value="vgg16">VGG16</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label class="slider-label" for="mu">Valoarea lui &mu; (Media): <span class="slider-value" id="mu-value">0</span></label>
-                    <input type="range" class="form-control-range" id="mu" name="mu" min="-1" max="1" step="0.01" value="0">
-                </div>
-                <div class="form-group">
-                    <label class="slider-label" for="sigma">Valoarea lui &sigma; (Abaterea standard): <span class="slider-value" id="sigma-value">0.1</span></label>
-                    <input type="range" class="form-control-range" id="sigma" name="sigma" min="0" max="1" step="0.01" value="0.1">
-                </div>
-                <div class="form-group">
                     <label for="metric">Selectează metrica de similaritate:</label>
                     <select class="form-control" id="metric" name="metric" required>
                         <option value="cosine">Similaritate Cosinus</option>
@@ -56,17 +41,6 @@
             </form>
         </div>
     </div>
-
-    <script>
-        // Update displayed values when sliders are moved
-        $(document).ready(function(){
-            $('#mu').on('input', function() {
-                $('#mu-value').text($(this).val());
-            });
-            $('#sigma').on('input', function() {
-                $('#sigma-value').text($(this).val());
-            });
-        });
-    </script>
 </body>
 </html>
+

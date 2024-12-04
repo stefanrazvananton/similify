@@ -44,7 +44,7 @@
         </div>
         <h5>Imagini Similare:</h5>
         <div class="row">
-            <div class="col-md-6">
+            <div class="col-md-3">
                 <h6 class="text-center">Rezultate ResNet50</h6>
                 <div class="image-grid" id="image-grid-resnet">
                     {% for item in images_resnet %}
@@ -61,12 +61,46 @@
                     {% endfor %}
                 </div>
             </div>
-            <div class="col-md-6">
+            <div class="col-md-3">
                 <h6 class="text-center">Rezultate VGG16</h6>
                 <div class="image-grid" id="image-grid-vgg">
                     {% for item in images_vgg %}
                         <div class="image-grid-item">
                             <img src="data:image/png;base64,{{ item.img_data }}" alt="Imagine similară VGG16" title="{{ item.name }}">
+                            <div class="similarity-score">
+                                {% if metric == 'cosine' %}
+                                    Similaritate Cosinus: {{ item.similarity }}
+                                {% else %}
+                                    Distanță: {{ item.similarity }}
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="col-md-3">
+                <h6 class="text-center">Rezultate ResNet50 (Contrastive)</h6>
+                <div class="image-grid" id="image-grid-resnet-contrastive">
+                    {% for item in images_resnet_contrastive %}
+                        <div class="image-grid-item">
+                            <img src="data:image/png;base64,{{ item.img_data }}" alt="Imagine similară ResNet50 Contrastive" title="{{ item.name }}">
+                            <div class="similarity-score">
+                                {% if metric == 'cosine' %}
+                                    Similaritate Cosinus: {{ item.similarity }}
+                                {% else %}
+                                    Distanță: {{ item.similarity }}
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="col-md-3">
+                <h6 class="text-center">Rezultate VGG16 (Contrastive)</h6>
+                <div class="image-grid" id="image-grid-vgg-contrastive">
+                    {% for item in images_resnet_contrastive %}
+                        <div class="image-grid-item">
+                            <img src="data:image/png;base64,{{ item.img_data }}" alt="Imagine similară VGG16 Contrastive" title="{{ item.name }}">
                             <div class="similarity-score">
                                 {% if metric == 'cosine' %}
                                     Similaritate Cosinus: {{ item.similarity }}

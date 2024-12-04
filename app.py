@@ -68,6 +68,21 @@ class FeatureExtractorVGG(nn.Module):
 
 
 
+class SiameseNetwork(nn.Module):
+    def __init__(self):
+        super(SiameseNetwork, self).__init__()
+        # Load pretrained ResNet50
+        self.model = models.resnet50(pretrained=True)
+        # Modify the last layer to output embeddings of size 256
+        num_ftrs = self.model.fc.in_features
+        self.model.fc = nn.Linear(num_ftrs, 256)
+
+    def forward(self, x):
+        output = self.model(x)
+        return output
+
+
+
 
 
 # Load both models and their feature databases
@@ -83,13 +98,23 @@ vgg_model = vgg_model.to(device)
 vgg_model.eval()
 features_vgg16 = np.load('features_vgg16.npy')
 
+
+
+resnet_contrastive_model = SiameseNetwork()
+resnet_contrastive_model = resnet_contrastive_model.to(device)
+resnet_contrastive_model.eval()
+resnet_contrastive_model.load_state_dict(torch.load('siamese_resnet50_9.pth', map_location=device))
+features_resnet_contrastive = np.load('features_resnet50_contrastive.npy')
+
+
+
 # Function to find most similar images using selected similarity metric
 def find_similar_images(query_features, features_db, metric):
     # Compute similarities/distances based on the selected metric
     if metric == 'cosine':
 
         nbrs = NearestNeighbors(n_neighbors=10, algorithm='auto', metric='cosine').fit(features_db)
-        distances, indices = nbrs.kneighbors(query_features.reshape(1, -1), n_neighbors=48)
+        distances, indices = nbrs.kneighbors(query_features.reshape(1, -1), n_neighbors=10)
         
         distances = distances[0]
         indices = indices[0] 
@@ -99,10 +124,10 @@ def find_similar_images(query_features, features_db, metric):
         # For distance metrics, lower values mean more similar
         if metric == 'euclidean':
             nbrs = NearestNeighbors(n_neighbors=10, algorithm='auto', metric='euclidean').fit(features_db)
-            distances, indices = nbrs.kneighbors(query_features.reshape(1, -1), n_neighbors=48)
+            distances, indices = nbrs.kneighbors(query_features.reshape(1, -1), n_neighbors=10)
         elif metric == 'manhattan':
             nbrs = NearestNeighbors(n_neighbors=10, algorithm='auto', metric='manhattan').fit(features_db)
-            distances, indices = nbrs.kneighbors(query_features.reshape(1, -1), n_neighbors=48)
+            distances, indices = nbrs.kneighbors(query_features.reshape(1, -1), n_neighbors=10)
 
 
         distances = distances[0]
@@ -162,10 +187,17 @@ def display_results(filename):
     query_features_resnet = extract_features(query_image_tensor, resnet_model)
     query_features_vgg = extract_features(query_image_tensor, vgg_model)
 
+    query_features_resnet_contrastive = extract_features(query_image_tensor, resnet_contrastive_model)
+
+
+    
     # Find similar images for both models
     similar_images_resnet = find_similar_images(query_features_resnet, features_resnet50, metric)
     similar_images_vgg = find_similar_images(query_features_vgg, features_vgg16, metric)
 
+    similar_images_resnet_contrastive = find_similar_images(query_features_resnet_contrastive, features_resnet_contrastive, metric)
+
+    
     # Convert images to base64 and include their filenames
     images_resnet = []
     for img_array, similarity in similar_images_resnet:
@@ -191,11 +223,26 @@ def display_results(filename):
             'name': os.path.basename(img_array[0])  # Include file name
         })
 
+
+    images_resnet_contrastive = []
+    for img_array, similarity in similar_images_resnet_contrastive:
+        img = Image.open(img_array[0])
+        buffered = io.BytesIO()
+        img.save(buffered, format="PNG")
+        img_str = base64.b64encode(buffered.getvalue()).decode()
+        images_resnet_contrastive.append({
+            'img_data': img_str,
+            'similarity': f"{similarity:.4f}",
+            'name': os.path.basename(img_array[0])  # Include file name
+        })
+
+    
+
     # Convert the uploaded image to base64
     with open(filepath, "rb") as f:
         uploaded_image_data = base64.b64encode(f.read()).decode()
 
-    return render_template('results.html', images_resnet=images_resnet, images_vgg=images_vgg,
+    return render_template('results.html', images_resnet=images_resnet, images_vgg=images_vgg,images_resnet_contrastive=images_resnet_contrastive,
                            uploaded_image=uploaded_image_data, metric=metric, filename=filename)
 
 

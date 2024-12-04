@@ -1,11 +1,8 @@
 <!doctype html>
-
 <html lang="en">
-<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <head>
     <meta charset="UTF-8">
     <title>Imagini Similare</title>
-    <!-- Bootstrap CSS -->
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css">
     <style>
         .image-grid {
@@ -35,18 +32,7 @@
             text-align: center;
             margin-top: 5px;
         }
-        /* Custom styles for sliders */
-        .slider-label {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .slider-value {
-            font-weight: bold;
-        }
     </style>
-    <!-- Include SocketIO -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/3.1.3/socket.io.min.js"></script>
 </head>
 <body class="bg-light">
     <div class="container mt-5">
@@ -63,7 +49,7 @@
                 <div class="image-grid" id="image-grid-resnet">
                     {% for item in images_resnet %}
                         <div class="image-grid-item">
-                            <img src="data:image/png;base64,{{ item.img_data }}" alt="Imagine similară ResNet50">
+                            <img src="data:image/png;base64,{{ item.img_data }}" alt="Imagine similară ResNet50" title="{{ item.name }}">
                             <div class="similarity-score">
                                 {% if metric == 'cosine' %}
                                     Similaritate Cosinus: {{ item.similarity }}
@@ -80,7 +66,7 @@
                 <div class="image-grid" id="image-grid-vgg">
                     {% for item in images_vgg %}
                         <div class="image-grid-item">
-                            <img src="data:image/png;base64,{{ item.img_data }}" alt="Imagine similară VGG16">
+                            <img src="data:image/png;base64,{{ item.img_data }}" alt="Imagine similară VGG16" title="{{ item.name }}">
                             <div class="similarity-score">
                                 {% if metric == 'cosine' %}
                                     Similaritate Cosinus: {{ item.similarity }}

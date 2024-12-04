@@ -15,6 +15,7 @@ from torch.utils.data import DataLoader
 import tqdm  # For progress display
 import matplotlib.pyplot as plt
 from scipy.spatial.distance import cdist
+from sklearn.neighbors import NearestNeighbors
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = 'uploads'
@@ -65,6 +66,10 @@ class FeatureExtractorVGG(nn.Module):
         x = self.classifier(x)
         return x
 
+
+
+
+
 # Load both models and their feature databases
 # ResNet50 model and features
 resnet_model = FeatureExtractorResNet()
@@ -82,26 +87,37 @@ features_vgg16 = np.load('features_vgg16.npy')
 def find_similar_images(query_features, features_db, metric):
     # Compute similarities/distances based on the selected metric
     if metric == 'cosine':
-        similarities = cosine_similarity([query_features], features_db)[0]
-        # Higher values mean more similar
-        most_similar_indices = similarities.argsort()[-48:][::-1]
-        # Retrieve most similar images and similarity scores
-        similar_images = [(cifar10_dataset.imgs[idx], similarities[idx]) for idx in most_similar_indices]
+
+        nbrs = NearestNeighbors(n_neighbors=10, algorithm='auto', metric='cosine').fit(features_db)
+        distances, indices = nbrs.kneighbors(query_features.reshape(1, -1), n_neighbors=48)
+        
+        distances = distances[0]
+        indices = indices[0] 
+
+        similar_images = [(cifar10_dataset.imgs[idx], 1 - distances[i]) for i, idx in enumerate(indices)]
     else:
         # For distance metrics, lower values mean more similar
         if metric == 'euclidean':
-            distances = cdist([query_features], features_db, metric='euclidean')[0]
+            nbrs = NearestNeighbors(n_neighbors=10, algorithm='auto', metric='euclidean').fit(features_db)
+            distances, indices = nbrs.kneighbors(query_features.reshape(1, -1), n_neighbors=48)
         elif metric == 'manhattan':
-            distances = cdist([query_features], features_db, metric='cityblock')[0]
-        else:
-            # Default to Euclidean if invalid metric
-            distances = cdist([query_features], features_db, metric='euclidean')[0]
-        # Get indices of most similar images
-        most_similar_indices = distances.argsort()[:48]
-        # Retrieve most similar images and distance scores
-        similar_images = [(cifar10_dataset.imgs[idx], distances[idx]) for idx in most_similar_indices]
+            nbrs = NearestNeighbors(n_neighbors=10, algorithm='auto', metric='manhattan').fit(features_db)
+            distances, indices = nbrs.kneighbors(query_features.reshape(1, -1), n_neighbors=48)
+
+
+        distances = distances[0]
+        indices = indices[0] 
+        
+        similar_images = [(cifar10_dataset.imgs[idx], distances[i]) for i, idx in enumerate(indices)]
 
     return similar_images
+
+
+
+
+
+
+
 
 # Updated extract_features function to add noise (same as before)
 def extract_features(image, model):
@@ -142,7 +158,7 @@ def display_results(filename):
     query_image = Image.open(filepath).convert('RGB')
     query_image_tensor = transform(query_image).unsqueeze(0).to(device)
 
-    # Extract features using both models without noise
+    # Extract features using both models
     query_features_resnet = extract_features(query_image_tensor, resnet_model)
     query_features_vgg = extract_features(query_image_tensor, vgg_model)
 
@@ -150,29 +166,38 @@ def display_results(filename):
     similar_images_resnet = find_similar_images(query_features_resnet, features_resnet50, metric)
     similar_images_vgg = find_similar_images(query_features_vgg, features_vgg16, metric)
 
-    # Convert images to base64 for ResNet50
+    # Convert images to base64 and include their filenames
     images_resnet = []
     for img_array, similarity in similar_images_resnet:
         img = Image.open(img_array[0])
         buffered = io.BytesIO()
         img.save(buffered, format="PNG")
         img_str = base64.b64encode(buffered.getvalue()).decode()
-        images_resnet.append({'img_data': img_str, 'similarity': f"{similarity:.4f}"})
+        images_resnet.append({
+            'img_data': img_str,
+            'similarity': f"{similarity:.4f}",
+            'name': os.path.basename(img_array[0])  # Include file name
+        })
 
-    # Convert images to base64 for VGG16
     images_vgg = []
     for img_array, similarity in similar_images_vgg:
         img = Image.open(img_array[0])
         buffered = io.BytesIO()
         img.save(buffered, format="PNG")
         img_str = base64.b64encode(buffered.getvalue()).decode()
-        images_vgg.append({'img_data': img_str, 'similarity': f"{similarity:.4f}"})
+        images_vgg.append({
+            'img_data': img_str,
+            'similarity': f"{similarity:.4f}",
+            'name': os.path.basename(img_array[0])  # Include file name
+        })
 
     # Convert the uploaded image to base64
     with open(filepath, "rb") as f:
         uploaded_image_data = base64.b64encode(f.read()).decode()
 
-    return render_template('results.html', images_resnet=images_resnet, images_vgg=images_vgg, uploaded_image=uploaded_image_data, metric=metric, filename=filename)
+    return render_template('results.html', images_resnet=images_resnet, images_vgg=images_vgg,
+                           uploaded_image=uploaded_image_data, metric=metric, filename=filename)
+
 
 if __name__ == '__main__':
     socketio.run(app, host='0.0.0.0', port=5000, debug=True)

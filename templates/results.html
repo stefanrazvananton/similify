@@ -98,7 +98,7 @@
             <div class="col-md-3">
                 <h6 class="text-center">Rezultate VGG16 (Contrastive)</h6>
                 <div class="image-grid" id="image-grid-vgg-contrastive">
-                    {% for item in images_resnet_contrastive %}
+                    {% for item in images_vgg_contrastive %}
                         <div class="image-grid-item">
                             <img src="data:image/png;base64,{{ item.img_data }}" alt="Imagine similară VGG16 Contrastive" title="{{ item.name }}">
                             <div class="similarity-score">

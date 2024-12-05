@@ -19,14 +19,15 @@ from sklearn.neighbors import NearestNeighbors
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = 'uploads'
-app.config['SECRET_KEY'] = 'secret!'  # Required for SocketIO
+app.config['SECRET_KEY'] = 'secret!'
 
-socketio = SocketIO(app)  # Initialize SocketIO
+socketio = SocketIO(app)
 
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 # Set device
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
 
 # Transformation applied to all images
 transform = transforms.Compose([
@@ -35,10 +36,12 @@ transform = transforms.Compose([
     transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])  # Normalization for pretrained models
 ])
 
+
 # Load CIFAR-10 dataset
 cifar10_dataset = datasets.ImageFolder(root='imgs', transform=transform)
 
-# Define feature extractor classes
+
+
 class FeatureExtractorResNet(nn.Module):
     def __init__(self):
         super(FeatureExtractorResNet, self).__init__()
@@ -66,11 +69,9 @@ class FeatureExtractorVGG(nn.Module):
         x = self.classifier(x)
         return x
 
-
-
-class SiameseNetwork(nn.Module):
+class FeatureExtractorResNetContrastive(nn.Module):
     def __init__(self):
-        super(SiameseNetwork, self).__init__()
+        super(FeatureExtractorResNetContrastive, self).__init__()
         # Load pretrained ResNet50
         self.model = models.resnet50(pretrained=True)
         # Modify the last layer to output embeddings of size 256
@@ -81,9 +82,18 @@ class SiameseNetwork(nn.Module):
         output = self.model(x)
         return output
 
-
-
-
+class FeatureExtractorVggContrastive(nn.Module):
+    def __init__(self):
+        super(FeatureExtractorVggContrastive, self).__init__()
+        # Load pretrained VGG16
+        self.model = models.vgg16(pretrained=True)
+        # Modify the classifier to output embeddings of size 256
+        num_ftrs = self.model.classifier[6].in_features
+        self.model.classifier[6] = nn.Linear(num_ftrs, 256)
+    
+    def forward(self, x):
+        output = self.model(x)
+        return output
 
 # Load both models and their feature databases
 # ResNet50 model and features
@@ -98,14 +108,19 @@ vgg_model = vgg_model.to(device)
 vgg_model.eval()
 features_vgg16 = np.load('features_vgg16.npy')
 
-
-
-resnet_contrastive_model = SiameseNetwork()
+# ResNet50 contrastive model and features
+resnet_contrastive_model = FeatureExtractorResNetContrastive()
 resnet_contrastive_model = resnet_contrastive_model.to(device)
 resnet_contrastive_model.eval()
-resnet_contrastive_model.load_state_dict(torch.load('siamese_resnet50_9.pth', map_location=device))
+resnet_contrastive_model.load_state_dict(torch.load('siamese_resnet50.pth', map_location=device))
 features_resnet_contrastive = np.load('features_resnet50_contrastive.npy')
 
+# VGG16 contrastive model and features
+vgg_contrastive_model = FeatureExtractorVggContrastive()
+vgg_contrastive_model = vgg_contrastive_model.to(device)
+vgg_contrastive_model.eval()
+vgg_contrastive_model.load_state_dict(torch.load('siamese_vgg16_3.pth', map_location=device))
+features_vgg_contrastive = np.load('features_vgg_contrastive.npy')
 
 
 # Function to find most similar images using selected similarity metric
@@ -139,12 +154,7 @@ def find_similar_images(query_features, features_db, metric):
 
 
 
-
-
-
-
-
-# Updated extract_features function to add noise (same as before)
+# Updated extract_features 
 def extract_features(image, model):
     with torch.no_grad():
         features = model(image)
@@ -186,17 +196,15 @@ def display_results(filename):
     # Extract features using both models
     query_features_resnet = extract_features(query_image_tensor, resnet_model)
     query_features_vgg = extract_features(query_image_tensor, vgg_model)
-
     query_features_resnet_contrastive = extract_features(query_image_tensor, resnet_contrastive_model)
-
+    query_features_vgg_contrastive = extract_features(query_image_tensor, vgg_contrastive_model)
 
     
     # Find similar images for both models
     similar_images_resnet = find_similar_images(query_features_resnet, features_resnet50, metric)
     similar_images_vgg = find_similar_images(query_features_vgg, features_vgg16, metric)
-
     similar_images_resnet_contrastive = find_similar_images(query_features_resnet_contrastive, features_resnet_contrastive, metric)
-
+    similar_images_vgg_contrastive = find_similar_images(query_features_vgg_contrastive, features_vgg_contrastive, metric)
     
     # Convert images to base64 and include their filenames
     images_resnet = []
@@ -223,7 +231,6 @@ def display_results(filename):
             'name': os.path.basename(img_array[0])  # Include file name
         })
 
-
     images_resnet_contrastive = []
     for img_array, similarity in similar_images_resnet_contrastive:
         img = Image.open(img_array[0])
@@ -236,13 +243,25 @@ def display_results(filename):
             'name': os.path.basename(img_array[0])  # Include file name
         })
 
+    images_vgg_contrastive = []
+    for img_array, similarity in similar_images_vgg_contrastive:
+        img = Image.open(img_array[0])
+        buffered = io.BytesIO()
+        img.save(buffered, format="PNG")
+        img_str = base64.b64encode(buffered.getvalue()).decode()
+        images_vgg_contrastive.append({
+            'img_data': img_str,
+            'similarity': f"{similarity:.4f}",
+            'name': os.path.basename(img_array[0])  # Include file name
+        })
+
     
 
     # Convert the uploaded image to base64
     with open(filepath, "rb") as f:
         uploaded_image_data = base64.b64encode(f.read()).decode()
 
-    return render_template('results.html', images_resnet=images_resnet, images_vgg=images_vgg,images_resnet_contrastive=images_resnet_contrastive,
+    return render_template('results.html', images_resnet=images_resnet, images_vgg=images_vgg,images_resnet_contrastive=images_resnet_contrastive,images_vgg_contrastive=images_vgg_contrastive,
                            uploaded_image=uploaded_image_data, metric=metric, filename=filename)
 
 

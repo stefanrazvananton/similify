@@ -16,7 +16,7 @@ import tqdm  # For progress display
 import matplotlib.pyplot as plt
 from scipy.spatial.distance import cdist
 from sklearn.neighbors import NearestNeighbors
-
+from utils import FeatureExtractorResNet,FeatureExtractorVGG,FeatureExtractorResNetContrastive,FeatureExtractorVggContrastive
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = 'uploads'
 app.config['SECRET_KEY'] = 'secret!'
@@ -41,59 +41,6 @@ transform = transforms.Compose([
 cifar10_dataset = datasets.ImageFolder(root='imgs', transform=transform)
 
 
-
-class FeatureExtractorResNet(nn.Module):
-    def __init__(self):
-        super(FeatureExtractorResNet, self).__init__()
-        model = models.resnet50(pretrained=True)
-        self.features = nn.Sequential(*list(model.children())[:-1])  # Exclude the last FC layer
-
-    def forward(self, x):
-        x = self.features(x)
-        x = x.view(x.size(0), -1)  # Flatten to (batch_size, 2048)
-        return x
-
-class FeatureExtractorVGG(nn.Module):
-    def __init__(self):
-        super(FeatureExtractorVGG, self).__init__()
-        model = models.vgg16(pretrained=True)
-        self.features = model.features
-        self.avgpool = model.avgpool  # AdaptiveAvgPool2d
-        # Include the classifier layers up to the second last layer
-        self.classifier = nn.Sequential(*list(model.classifier.children())[:-1])
-
-    def forward(self, x):
-        x = self.features(x)
-        x = self.avgpool(x)
-        x = torch.flatten(x, 1)
-        x = self.classifier(x)
-        return x
-
-class FeatureExtractorResNetContrastive(nn.Module):
-    def __init__(self):
-        super(FeatureExtractorResNetContrastive, self).__init__()
-        # Load pretrained ResNet50
-        self.model = models.resnet50(pretrained=True)
-        # Modify the last layer to output embeddings of size 256
-        num_ftrs = self.model.fc.in_features
-        self.model.fc = nn.Linear(num_ftrs, 256)
-
-    def forward(self, x):
-        output = self.model(x)
-        return output
-
-class FeatureExtractorVggContrastive(nn.Module):
-    def __init__(self):
-        super(FeatureExtractorVggContrastive, self).__init__()
-        # Load pretrained VGG16
-        self.model = models.vgg16(pretrained=True)
-        # Modify the classifier to output embeddings of size 256
-        num_ftrs = self.model.classifier[6].in_features
-        self.model.classifier[6] = nn.Linear(num_ftrs, 256)
-    
-    def forward(self, x):
-        output = self.model(x)
-        return output
 
 # Load both models and their feature databases
 # ResNet50 model and features
@@ -121,6 +68,7 @@ vgg_contrastive_model = vgg_contrastive_model.to(device)
 vgg_contrastive_model.eval()
 vgg_contrastive_model.load_state_dict(torch.load('siamese_vgg16_3.pth', map_location=device))
 features_vgg_contrastive = np.load('features_vgg_contrastive.npy')
+
 
 
 # Function to find most similar images using selected similarity metric
@@ -161,6 +109,9 @@ def extract_features(image, model):
         features = features.cpu().numpy().flatten()  # Move to CPU and convert to numpy
 
         return features
+
+
+
 
 
 @app.route('/', methods=['GET', 'POST'])

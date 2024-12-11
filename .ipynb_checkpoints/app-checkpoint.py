@@ -102,6 +102,112 @@ def find_similar_images(query_features, features_db, metric):
 
 
 
+
+import numpy as np
+from PIL import Image
+import networkx as nx
+
+
+
+def build_similarity_graph(query_image_path, depth, N,metric,model):
+    G = nx.Graph()
+    visited = set()
+    queue = [(query_image_path, 0)]  # (image_path, current_depth)
+    while queue:
+        current_image_path, current_depth = queue.pop(0)  # BFS
+        if current_depth >= depth:
+            continue
+        if current_image_path in visited:
+            continue
+        visited.add(current_image_path)
+
+
+        if model == 'resnet50':
+            query_image = Image.open(query_image_path).convert('RGB')
+            query_image_tensor = transform(query_image).unsqueeze(0).to(device)
+            query_features_resnet = extract_features(query_image_tensor, resnet_model)
+        
+            similar_images = find_similar_images(query_features_resnet, features_resnet50,metric)
+
+
+
+        if model == 'vgg16':
+            query_image = Image.open(query_image_path).convert('RGB')
+            query_image_tensor = transform(query_image).unsqueeze(0).to(device)
+            query_features_vgg = extract_features(query_image_tensor, vgg_model)
+        
+            similar_images = find_similar_images(query_features_vgg, features_vgg16,metric)
+
+        # Exclude the current image from similar_images
+        similar_images = [sim_img for sim_img in similar_images if sim_img[0][0] != current_image_path]
+
+        if not similar_images:
+            continue  # Skip if no similar images found
+
+        # Normalize similarities and add edges
+        for similar_image in similar_images:
+            similar_image_path = similar_image[0][0]
+            # Add edge to the graph with normalized weight
+            G.add_edge(current_image_path, similar_image_path, weight=similar_image[1])
+            queue.append((similar_image_path, current_depth + 1))
+    return G
+
+
+
+from collections import defaultdict
+import random
+def stochastic_diffusion_process(G, query_image_path, num_steps=10, reset_prob=0.01, num_walks=1000):
+
+    # Ensure the query image is in the graph
+    if query_image_path not in G:
+        raise ValueError("Query image path not found in the graph.")
+
+    # Precompute cumulative distribution functions (CDFs) for neighbors
+    neighbor_cdfs = {}
+    for node in G.nodes():
+        neighbors = list(G.neighbors(node))
+        if neighbors:
+            weights = np.array([G[node][nbr].get('weight', 1.0) for nbr in neighbors])
+            total_weight = weights.sum()
+            probabilities = weights / total_weight
+            cdf = np.cumsum(probabilities)
+            neighbor_cdfs[node] = (neighbors, cdf)
+
+    # Initialize a counter for visits to each node
+    visit_counts = defaultdict(int)
+
+    # Simulate random walks
+    for walk in range(num_walks):
+        current_node = query_image_path
+        for step in range(num_steps):
+            # Reset to query image with reset probability
+            if random.random() < reset_prob:
+                current_node = query_image_path
+
+            # Record visit to current node
+            visit_counts[current_node] += 1
+
+            # Check if the current node has neighbors
+            if current_node in neighbor_cdfs:
+                neighbors, cdf = neighbor_cdfs[current_node]
+                rnd = random.random()
+                # Select the next node based on the CDF
+                idx = np.searchsorted(cdf, rnd)
+                current_node = neighbors[idx]
+            else:
+                # If no neighbors, stay in the current node
+                continue
+
+    # Calculate probabilities by normalizing visit counts
+    total_visits = sum(visit_counts.values())
+    node_probabilities = {node: count / total_visits for node, count in visit_counts.items()}
+
+    return node_probabilities
+
+# Usage example
+
+
+    
 # Updated extract_features 
 def extract_features(image, model):
     with torch.no_grad():
@@ -139,28 +245,67 @@ def upload_image():
 def display_results(filename):
     metric = request.args.get('metric', 'cosine')
     filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-
+    graph = 1
     # Load the query image
     query_image = Image.open(filepath).convert('RGB')
     query_image_tensor = transform(query_image).unsqueeze(0).to(device)
 
-    # Extract features using both models
-    query_features_resnet = extract_features(query_image_tensor, resnet_model)
-    query_features_vgg = extract_features(query_image_tensor, vgg_model)
-    query_features_resnet_contrastive = extract_features(query_image_tensor, resnet_contrastive_model)
-    query_features_vgg_contrastive = extract_features(query_image_tensor, vgg_contrastive_model)
-
+    if graph == 0:
+        # Extract features using both models
+        query_features_resnet = extract_features(query_image_tensor, resnet_model)
+        query_features_vgg = extract_features(query_image_tensor, vgg_model)
+        query_features_resnet_contrastive = extract_features(query_image_tensor, resnet_contrastive_model)
+        query_features_vgg_contrastive = extract_features(query_image_tensor, vgg_contrastive_model)
     
-    # Find similar images for both models
-    similar_images_resnet = find_similar_images(query_features_resnet, features_resnet50, metric)
-    similar_images_vgg = find_similar_images(query_features_vgg, features_vgg16, metric)
-    similar_images_resnet_contrastive = find_similar_images(query_features_resnet_contrastive, features_resnet_contrastive, metric)
-    similar_images_vgg_contrastive = find_similar_images(query_features_vgg_contrastive, features_vgg_contrastive, metric)
+        
+        # Find similar images for both models
+        similar_images_resnet = find_similar_images(query_features_resnet, features_resnet50, metric)
+        similar_images_vgg = find_similar_images(query_features_vgg, features_vgg16, metric)
+        similar_images_resnet_contrastive = find_similar_images(query_features_resnet_contrastive, features_resnet_contrastive, metric)
+        similar_images_vgg_contrastive = find_similar_images(query_features_vgg_contrastive, features_vgg_contrastive, metric)
+
+    if graph == 1:
+        G_resnet = build_similarity_graph(filepath, depth=3, N=5,metric=metric,model='resnet50')
+        G_vgg = build_similarity_graph(filepath, depth=3, N=5,metric=metric,model='vgg16')
+        num_steps = 5
+        reset_prob = 0.01  # 1% probability to reset to the query image at each step
+        num_walks = 100  # Number of random walks to simulate
+        
+        node_probabilities_resnet = stochastic_diffusion_process(
+        G_resnet,
+        filepath,
+        num_steps=num_steps,
+        reset_prob=reset_prob,
+        num_walks=num_walks)
+    
+    
+        sorted_nodes_resnet = sorted(node_probabilities_resnet.items(), key=lambda x: x[1], reverse=True)
+        similar_images_resnet = sorted_nodes_resnet[:10]
+    
+        print(similar_images_resnet)
+    
+        node_probabilities_vgg = stochastic_diffusion_process(
+        G_vgg,
+        filepath,
+        num_steps=num_steps,
+        reset_prob=reset_prob,
+        num_walks=num_walks)
+    
+    
+        sorted_nodes_vgg = sorted(node_probabilities_vgg.items(), key=lambda x: x[1], reverse=True)
+        similar_images_vgg = sorted_nodes_vgg[:10]
+
+        print(similar_images_vgg)
+
+        
     
     # Convert images to base64 and include their filenames
     images_resnet = []
     for img_array, similarity in similar_images_resnet:
-        img = Image.open(img_array[0])
+        if graph == 0:
+            img = Image.open(img_array[0])
+        if graph == 1:
+            img = Image.open(img_array)
         buffered = io.BytesIO()
         img.save(buffered, format="PNG")
         img_str = base64.b64encode(buffered.getvalue()).decode()
@@ -172,7 +317,10 @@ def display_results(filename):
 
     images_vgg = []
     for img_array, similarity in similar_images_vgg:
-        img = Image.open(img_array[0])
+        if graph == 0:
+            img = Image.open(img_array[0])
+        if graph == 1:
+            img = Image.open(img_array)
         buffered = io.BytesIO()
         img.save(buffered, format="PNG")
         img_str = base64.b64encode(buffered.getvalue()).decode()
@@ -183,28 +331,28 @@ def display_results(filename):
         })
 
     images_resnet_contrastive = []
-    for img_array, similarity in similar_images_resnet_contrastive:
-        img = Image.open(img_array[0])
-        buffered = io.BytesIO()
-        img.save(buffered, format="PNG")
-        img_str = base64.b64encode(buffered.getvalue()).decode()
-        images_resnet_contrastive.append({
-            'img_data': img_str,
-            'similarity': f"{similarity:.4f}",
-            'name': os.path.basename(img_array[0])  # Include file name
-        })
+    # for img_array, similarity in similar_images_resnet_contrastive:
+    #     img = Image.open(img_array[0])
+    #     buffered = io.BytesIO()
+    #     img.save(buffered, format="PNG")
+    #     img_str = base64.b64encode(buffered.getvalue()).decode()
+    #     images_resnet_contrastive.append({
+    #         'img_data': img_str,
+    #         'similarity': f"{similarity:.4f}",
+    #         'name': os.path.basename(img_array[0])  # Include file name
+    #     })
 
     images_vgg_contrastive = []
-    for img_array, similarity in similar_images_vgg_contrastive:
-        img = Image.open(img_array[0])
-        buffered = io.BytesIO()
-        img.save(buffered, format="PNG")
-        img_str = base64.b64encode(buffered.getvalue()).decode()
-        images_vgg_contrastive.append({
-            'img_data': img_str,
-            'similarity': f"{similarity:.4f}",
-            'name': os.path.basename(img_array[0])  # Include file name
-        })
+    # for img_array, similarity in similar_images_vgg_contrastive:
+    #     img = Image.open(img_array[0])
+    #     buffered = io.BytesIO()
+    #     img.save(buffered, format="PNG")
+    #     img_str = base64.b64encode(buffered.getvalue()).decode()
+    #     images_vgg_contrastive.append({
+    #         'img_data': img_str,
+    #         'similarity': f"{similarity:.4f}",
+    #         'name': os.path.basename(img_array[0])  # Include file name
+    #     })
 
     
 

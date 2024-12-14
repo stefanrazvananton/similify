@@ -28,19 +28,44 @@
                     <label for="file">Încarcă o imagine:</label>
                     <input type="file" class="form-control-file" id="file" name="file" accept="image/*" required>
                 </div>
+
                 <div class="form-group">
                     <label for="metric">Selectează metrica de similaritate:</label>
                     <select class="form-control" id="metric" name="metric" required>
                         <option value="cosine">Similaritate Cosinus</option>
                         <option value="euclidean">Distanță Euclidiană</option>
                         <option value="manhattan">Distanță Manhattan</option>
-                        <!-- Add more metrics if desired -->
                     </select>
                 </div>
+
+                <!-- Toggle Button for graph_search -->
+                <div class="form-group">
+                    <label for="graph_search_btn">Graph Search:</label>
+                    <!-- Hidden input that holds the actual value submitted to Flask -->
+                    <input type="hidden" id="graph_search" name="graph_search" value="false">
+                    <button type="button" id="graph_search_btn" class="btn btn-secondary">
+                        Graph Search: False
+                    </button>
+                </div>
+
                 <button type="submit" class="btn btn-primary btn-block">Caută</button>
             </form>
         </div>
     </div>
+
+    <script>
+      // Toggle the value of graph_search between "true" and "false" on each click
+      $('#graph_search_btn').click(function() {
+        const currentVal = $('#graph_search').val();
+        if (currentVal === "false") {
+          $('#graph_search').val("true");
+          $(this).text("Graph Search: True").removeClass("btn-secondary").addClass("btn-success");
+        } else {
+          $('#graph_search').val("false");
+          $(this).text("Graph Search: False").removeClass("btn-success").addClass("btn-secondary");
+        }
+      });
+    </script>
 </body>
 </html>
 

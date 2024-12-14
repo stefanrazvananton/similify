@@ -130,7 +130,6 @@ def build_similarity_graph(query_image_path, depth, N,metric,model):
             similar_images = find_similar_images(query_features_resnet, features_resnet50,metric)
 
 
-
         if model == 'vgg16':
             query_image = Image.open(query_image_path).convert('RGB')
             query_image_tensor = transform(query_image).unsqueeze(0).to(device)
@@ -138,6 +137,23 @@ def build_similarity_graph(query_image_path, depth, N,metric,model):
         
             similar_images = find_similar_images(query_features_vgg, features_vgg16,metric)
 
+
+        if model == 'resnet50_contrastive':
+            query_image = Image.open(query_image_path).convert('RGB')
+            query_image_tensor = transform(query_image).unsqueeze(0).to(device)
+            query_features_resnet_contrastive = extract_features(query_image_tensor, resnet_contrastive_model)
+        
+            similar_images = find_similar_images(query_features_resnet_contrastive, features_resnet_contrastive,metric)
+
+
+        if model == 'vgg16_contrastive':
+            query_image = Image.open(query_image_path).convert('RGB')
+            query_image_tensor = transform(query_image).unsqueeze(0).to(device)
+            query_features_vgg_contrastive = extract_features(query_image_tensor, vgg_contrastive_model)
+        
+            similar_images = find_similar_images(query_features_vgg_contrastive, features_vgg_contrastive,metric)
+        
+        
         # Exclude the current image from similar_images
         similar_images = [sim_img for sim_img in similar_images if sim_img[0][0] != current_image_path]
 
@@ -225,6 +241,8 @@ def upload_image():
             return redirect(request.url)
         file = request.files['file']
         metric = request.form['metric']
+        graph = request.form['graph_search']
+        print(graph)
         # If the user does not select a file, the browser submits an empty file without a filename
         if file.filename == '':
             return redirect(request.url)
@@ -233,7 +251,7 @@ def upload_image():
             filepath = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
             file.save(filepath)
             # Redirect to the display route with the selected parameters
-            return redirect(url_for('display_results', filename=file.filename, metric=metric))
+            return redirect(url_for('display_results', filename=file.filename, metric=metric, graph=graph))
     return render_template('upload.html')
 
 
@@ -242,12 +260,13 @@ def upload_image():
 def display_results(filename):
     metric = request.args.get('metric', 'cosine')
     filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-    graph = 0
+    graph = request.args.get('graph','True')
+    #graph = False
     # Load the query image
     query_image = Image.open(filepath).convert('RGB')
     query_image_tensor = transform(query_image).unsqueeze(0).to(device)
 
-    if graph == 0:
+    if graph == 'false':
         # Extract features using both models
         query_features_resnet = extract_features(query_image_tensor, resnet_model)
         query_features_vgg = extract_features(query_image_tensor, vgg_model)
@@ -261,9 +280,13 @@ def display_results(filename):
         similar_images_resnet_contrastive = find_similar_images(query_features_resnet_contrastive, features_resnet_contrastive, metric)
         similar_images_vgg_contrastive = find_similar_images(query_features_vgg_contrastive, features_vgg_contrastive, metric)
 
-    if graph == 1:
+    if graph == 'true':
         G_resnet = build_similarity_graph(filepath, depth=3, N=5,metric=metric,model='resnet50')
         G_vgg = build_similarity_graph(filepath, depth=3, N=5,metric=metric,model='vgg16')
+        G_resnet_contrastive = build_similarity_graph(filepath, depth=3, N=5,metric=metric,model='resnet50_contrastive')
+        G_vgg_contrastive = build_similarity_graph(filepath, depth=3, N=5,metric=metric,model='vgg16_contrastive')        
+
+        
         num_steps = 5
         reset_prob = 0.01  # 1% probability to reset to the query image at each step
         num_walks = 100  # Number of random walks to simulate
@@ -278,8 +301,7 @@ def display_results(filename):
     
         sorted_nodes_resnet = sorted(node_probabilities_resnet.items(), key=lambda x: x[1], reverse=True)
         similar_images_resnet = sorted_nodes_resnet[:10]
-    
-        print(similar_images_resnet)
+        # print(similar_images_resnet)
     
         node_probabilities_vgg = stochastic_diffusion_process(
         G_vgg,
@@ -291,64 +313,96 @@ def display_results(filename):
     
         sorted_nodes_vgg = sorted(node_probabilities_vgg.items(), key=lambda x: x[1], reverse=True)
         similar_images_vgg = sorted_nodes_vgg[:10]
+        # print(similar_images_vgg)
 
-        print(similar_images_vgg)
+        node_probabilities_resnet_contrastive = stochastic_diffusion_process(
+        G_resnet_contrastive,
+        filepath,
+        num_steps=num_steps,
+        reset_prob=reset_prob,
+        num_walks=num_walks)
+    
+    
+        sorted_nodes_resnet_contrastive = sorted(node_probabilities_resnet_contrastive.items(), key=lambda x: x[1], reverse=True)
+        similar_images_resnet_contrastive = sorted_nodes_resnet_contrastive[:10]
+        print(similar_images_resnet_contrastive)
 
-        
+        node_probabilities_vgg_contrastive = stochastic_diffusion_process(
+        G_vgg_contrastive,
+        filepath,
+        num_steps=num_steps,
+        reset_prob=reset_prob,
+        num_walks=num_walks)
+    
+    
+        sorted_nodes_vgg_contrastive = sorted(node_probabilities_vgg_contrastive.items(), key=lambda x: x[1], reverse=True)
+        similar_images_vgg_contrastive = sorted_nodes_vgg_contrastive[:10]
+        print(similar_images_vgg_contrastive)
+
     
     # Convert images to base64 and include their filenames
     images_resnet = []
     for img_array, similarity in similar_images_resnet:
-        if graph == 0:
-            img = Image.open(img_array[0])
-        if graph == 1:
-            img = Image.open(img_array)
+        if graph == 'false':
+            img_array = img_array[0]
+        if graph == 'true':
+            img_array = img_array
+        img = Image.open(img_array)    
         buffered = io.BytesIO()
         img.save(buffered, format="PNG")
         img_str = base64.b64encode(buffered.getvalue()).decode()
         images_resnet.append({
             'img_data': img_str,
             'similarity': f"{similarity:.4f}",
-            'name': os.path.basename(img_array[0])  # Include file name
+            'name': os.path.basename(img_array)  # Include file name
         })
 
     images_vgg = []
     for img_array, similarity in similar_images_vgg:
-        if graph == 0:
-            img = Image.open(img_array[0])
-        if graph == 1:
-            img = Image.open(img_array)
+        if graph == 'false':
+            img_array = img_array[0]
+        if graph == 'true':
+            img_array = img_array
+        img = Image.open(img_array) 
         buffered = io.BytesIO()
         img.save(buffered, format="PNG")
         img_str = base64.b64encode(buffered.getvalue()).decode()
         images_vgg.append({
             'img_data': img_str,
             'similarity': f"{similarity:.4f}",
-            'name': os.path.basename(img_array[0])  # Include file name
+            'name': os.path.basename(img_array)  # Include file name
         })
 
     images_resnet_contrastive = []
     for img_array, similarity in similar_images_resnet_contrastive:
-        img = Image.open(img_array[0])
+        if graph == 'false':
+            img_array = img_array[0]
+        if graph == 'true':
+            img_array = img_array
+        img = Image.open(img_array) 
         buffered = io.BytesIO()
         img.save(buffered, format="PNG")
         img_str = base64.b64encode(buffered.getvalue()).decode()
         images_resnet_contrastive.append({
             'img_data': img_str,
             'similarity': f"{similarity:.4f}",
-            'name': os.path.basename(img_array[0])  # Include file name
+            'name': os.path.basename(img_array)  # Include file name
         })
 
     images_vgg_contrastive = []
     for img_array, similarity in similar_images_vgg_contrastive:
-        img = Image.open(img_array[0])
+        if graph == 'false':
+            img_array = img_array[0]
+        if graph == 'true':
+            img_array = img_array
+        img = Image.open(img_array) 
         buffered = io.BytesIO()
         img.save(buffered, format="PNG")
         img_str = base64.b64encode(buffered.getvalue()).decode()
         images_vgg_contrastive.append({
             'img_data': img_str,
             'similarity': f"{similarity:.4f}",
-            'name': os.path.basename(img_array[0])  # Include file name
+            'name': os.path.basename(img_array)  # Include file name
         })
 
     
@@ -357,7 +411,7 @@ def display_results(filename):
     with open(filepath, "rb") as f:
         uploaded_image_data = base64.b64encode(f.read()).decode()
 
-    return render_template('results.html', images_resnet=images_resnet, images_vgg=images_vgg,images_resnet_contrastive=images_resnet_contrastive,images_vgg_contrastive=images_vgg_contrastive,
+    return render_template('results.html', images_resnet=images_resnet, images_vgg=images_vgg, images_resnet_contrastive=images_resnet_contrastive, images_vgg_contrastive=images_vgg_contrastive,
                            uploaded_image=uploaded_image_data, metric=metric, filename=filename)
 
 

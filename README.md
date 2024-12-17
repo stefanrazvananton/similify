@@ -6,15 +6,18 @@ Descarca toate fisierele de [aici](https://drive.google.com/drive/folders/1G0QzB
 
 
 Pentru a rula
+
 git clone https://github.com/stefanrazvananton/similify.git
+
 cd similify
 
 conda create -n "similify" python=3.10.15
+
 conda activate similify
 
 
 pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
-https://pytorch.org/get-started/locally/
+
 
 
 

@@ -20,10 +20,15 @@ https://pytorch.org/get-started/locally/
 
 
 pip install flask
+
 pip install flask_socketio
+
 pip install scikit-learn
+
 pip install tqdm
+
 pip install matplotlib
+
 
 python app.py
 

@@ -51,10 +51,15 @@ pip install matplotlib
 
 imgs:
 -0
+
 -1
+
 -2
+
 -3
+
 -4
+
 ...
 
 python app.py

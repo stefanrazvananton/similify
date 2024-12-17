@@ -50,6 +50,7 @@ pip install matplotlib
 7) Folder-ul imgs trebuie sa aiba structura
 
 imgs:
+
 -0
 
 -1

@@ -6,22 +6,12 @@ from torch.utils.data import Dataset, DataLoader
 import os
 from PIL import Image
 import random
-import tqdm  # For progress display
 import numpy as np
-import numpy as np
-import torch
-import torch.nn as nn
-import torchvision.transforms as transforms
-import torchvision.models as models
-import torchvision.datasets as datasets
-from torch.utils.data import DataLoader
 from sklearn.metrics.pairwise import cosine_similarity
 from PIL import Image
-import tqdm  # For progress display
+import tqdm
 import matplotlib.pyplot as plt
 from sklearn.neighbors import NearestNeighbors
-import torch.nn as nn
-from torchvision import models
 
 torch.backends.cudnn.benchmark = True
 
@@ -44,7 +34,7 @@ class SiameseNetworkDataset(Dataset):
         return len(self.image_paths)
 
     def __getitem__(self, index):
-        # Get an image and its label
+       
         img0_tuple = self.image_paths[index]
         img0_path, label0 = img0_tuple
 
@@ -77,7 +67,7 @@ class SiameseNetworkDataset(Dataset):
         return img0, img1, label
 
 
-data_dir = 'imgs'  # Replace with your dataset path
+data_dir = 'imgs'
 
 image_folder_dataset = datasets.ImageFolder(root=data_dir)
 siamese_dataset = SiameseNetworkDataset(imageFolderDataset=image_folder_dataset,
@@ -122,7 +112,6 @@ class SiameseNetwork_vgg16(nn.Module):
         return output
 
     def forward(self, input1, input2):
-        # Pass both inputs through the network
         output1 = self.forward_once(input1)
         output2 = self.forward_once(input2)
         return output1, output2
@@ -186,9 +175,9 @@ def find_similar_images(query_image_path, features_db, top_n=10):
 
 
 transform = transforms.Compose([
-    transforms.Resize((224, 224)),  # Resize images to 224x224 for models
+    transforms.Resize((224, 224)),
     transforms.ToTensor(),
-    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])  # Normalization for pretrained models
+    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
 ])
 
 

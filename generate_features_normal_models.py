@@ -7,7 +7,7 @@ import torchvision.datasets as datasets
 from torch.utils.data import DataLoader
 from sklearn.metrics.pairwise import cosine_similarity
 from PIL import Image
-import tqdm  # For progress display
+import tqdm
 import matplotlib.pyplot as plt
 from sklearn.neighbors import NearestNeighbors
 
@@ -34,7 +34,7 @@ class FeatureExtractorResNet(nn.Module):
 
     def forward(self, x):
         x = self.features(x)
-        x = x.view(x.size(0), -1)  # Flatten to (batch_size, 2048)
+        x = x.view(x.size(0), -1)
         return x
 
 class FeatureExtractorVGG(nn.Module):
@@ -52,7 +52,7 @@ class FeatureExtractorVGG(nn.Module):
         x = self.classifier(x)
         return x
         
-architecture = 'vgg16'  # or 'vgg16'
+architecture = 'vgg16'
 if architecture == 'resnet50':
     model = FeatureExtractorResNet()
 elif architecture == 'vgg16':

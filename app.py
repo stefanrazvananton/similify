@@ -97,7 +97,7 @@ def build_similarity_graph(query_image_path, depth, N,metric,model):
     visited = set()
     queue = [(query_image_path, 0)]
     while queue:
-        current_image_path, current_depth = queue.pop(0)  # BFS
+        current_image_path, current_depth = queue.pop(0)
         if current_depth >= depth:
             continue
         if current_image_path in visited:

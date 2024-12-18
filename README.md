@@ -2,7 +2,14 @@ Testat pe Windows 10 si Ubuntu 24.04.1
 
 
 
-
+## tilizare:
+### Recommended environment:
+```
+Python 3.8
+Pytorch 1.11.0
+torchvision 0.12.0
+```
+Folositi ```pip install -r requirements.txt``` pentru a instala dependentele.
 
 
 Pentru a rula

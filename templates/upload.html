@@ -38,13 +38,12 @@
                     </select>
                 </div>
 
-                <!-- Toggle Button for graph_search -->
+
                 <div class="form-group">
-                    <label for="graph_search_btn">Graph Search:</label>
-                    <!-- Hidden input that holds the actual value submitted to Flask -->
+                    <label for="graph_search_btn">Cautare in Graf:</label>
                     <input type="hidden" id="graph_search" name="graph_search" value="false">
                     <button type="button" id="graph_search_btn" class="btn btn-secondary">
-                        Graph Search: False
+                        False
                     </button>
                 </div>
 
@@ -59,10 +58,10 @@
         const currentVal = $('#graph_search').val();
         if (currentVal === "false") {
           $('#graph_search').val("true");
-          $(this).text("Graph Search: True").removeClass("btn-secondary").addClass("btn-success");
+          $(this).text("True").removeClass("btn-secondary").addClass("btn-success");
         } else {
           $('#graph_search').val("false");
-          $(this).text("Graph Search: False").removeClass("btn-success").addClass("btn-secondary");
+          $(this).text("False").removeClass("btn-success").addClass("btn-secondary");
         }
       });
     </script>

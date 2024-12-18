@@ -1,6 +1,6 @@
 Testat pe Windows 10 si Ubuntu 24.04.1 atat pe GPU cat si pe CPU
 
-
+Pentru a intelege modul de functionare accesati [prezentarea cu explicatii minimale](https://github.com/stefanrazvananton/similify/blob/main/explicatii%20minimale.pptx)
 
 ## Utilizare:
 ### Environment recomandat:

@@ -35,7 +35,7 @@ Descarcati modelele preantrenate contrastiv de pe [Google Drive](https://drive.g
 ### Caracteristici (features) precalculate:
 Descarcati caracteristicile de pe [Google Drive](https://drive.google.com/drive/folders/11hBGEKtb2-oSvrJOF77EdgcGq4zUcSx6?usp=sharing), si mutati-le in folder-ul './similify'
 
-Daca se vrea, caracteristicile se pot genera din nou prin executarea comenzilor
+Daca se vrea, caracteristicile se pot genera din nou prin executarea comenzilor (nu este recomandat daca nu aveti la dispozitie o placa video cu minim 6 GB VRAM)
 ```
 python generate_features_normal_models.py
 python generate_features_contrastive_models.py

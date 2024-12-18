@@ -9,10 +9,12 @@ Python 3.10.15
 Pytorch 1.11.0 de modificat
 torchvision 0.12.0 de modificat
 ```
-```git clone https://github.com/stefanrazvananton/similify.git```
-```cd similify```
-```conda create -n "similify" python=3.10.15```
-```conda activate similify```
+```
+git clone https://github.com/stefanrazvananton/similify.git
+cd similify
+conda create -n "similify" python=3.10.15
+conda activate similify
+```
 
 Instalati Pytorch folosind instructiuniile de [aici](https://pytorch.org/get-started/locally/).
 

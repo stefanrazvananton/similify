@@ -24,16 +24,16 @@ Folositi ```pip install -r requirements.txt``` pentru a instala dependentele.
 
 
 ### Dataset:
-Descarcati dataset-ul procesat de pe [Google Drive](https://drive.google.com/file/d/13qYHNIWTIBzwyFgScORL2RFd002vrPF2/view) si mutati in folder-ul './similify'.
+Descarcati dataset-ul procesat de pe [Google Drive](https://drive.google.com/drive/folders/1JF-A-LgbF8mH5EjMorGdWi1iIlKflDOs?usp=sharing) si mutati in folder-ul './similify'.
 
 Structura trebuie sa fie '.similify/imgs/0', '.similify/imgs/1', '.similify/imgs/2' ... 
 
 
 ### Modelele preantrenate:
-Descarcati modelele preantrenate contrastiv de pe [Google Drive](https://drive.google.com/drive/folders/1Eu8v9vMRvt-dyCH0XSV2i77lAd62nPXV?usp=sharing), si mutati-le in folder-ul './similify'
+Descarcati modelele preantrenate contrastiv de pe [Google Drive](https://drive.google.com/drive/folders/198Dfq5g0ZZbsjDYi6yu_KHf0VxQYGsoi?usp=sharing), si mutati-le in folder-ul './similify'
 
 ### Caracteristici (features) precalculate:
-Descarcati caracteristicile de pe [Google Drive](https://drive.google.com/drive/folders/1Eu8v9vMRvt-dyCH0XSV2i77lAd62nPXV?usp=sharing), si mutati-le in folder-ul './similify'
+Descarcati caracteristicile de pe [Google Drive](https://drive.google.com/drive/folders/11hBGEKtb2-oSvrJOF77EdgcGq4zUcSx6?usp=sharing), si mutati-le in folder-ul './similify'
 
 
 
@@ -42,8 +42,8 @@ Executati comanda ```python app.py```
 
 Dupa un timp se vor afisa in consola doua adrese
 ```
-127.0.0.1:5000
-xxx.xxx.x.x:5000
+http://127.0.0.1:5000
+xxx.xxx.x.xxx:5000
 ```
 Accesati una dintre aceste adrese pentru a utiliza aplicatia
 

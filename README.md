@@ -40,23 +40,10 @@ Descarcati caracteristicile de pe [Google Drive](https://drive.google.com/drive/
 ### Testare:
 Executati comanda ```python app.py```
 
-
-pip install flask
-
-pip install flask_socketio
-
-pip install scikit-learn
-
-pip install tqdm
-
-pip install matplotlib
-
-
-
-
-
-python app.py
-
-dupa se intra pe server-ul afisat pe ecran
-
+Dupa un timp se vor afisa in consola doua adrese
+```
 127.0.0.1:5000
+xxx.xxx.x.x:5000
+```
+Accesati una dintre aceste adrese pentru a utiliza aplicatia
+

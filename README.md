@@ -2,7 +2,7 @@ Testat pe Windows 10 si Ubuntu 24.04.1 atat pe GPU cat si pe CPU
 
 Pentru a intelege modul de functionare accesati [prezentarea cu explicatii minimale](https://github.com/stefanrazvananton/similify/blob/main/explicatii%20minimale.pdf)
 
-## Demo
+## Demo (click pentru a vizualiza)
 [![Demo](https://img.youtube.com/vi/MLlWAWTXQYk/0.jpg)](https://www.youtube.com/watch?v=MLlWAWTXQYk)
 
 ## Utilizare:

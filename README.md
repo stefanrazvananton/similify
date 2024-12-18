@@ -30,7 +30,7 @@ Structura trebuie sa fie '.similify/imgs/0', '.similify/imgs/1', '.similify/imgs
 
 Clasele de la 0 la 9 sunt cele din setul de test de la [CIFAR-10](https://www.cs.toronto.edu/~kriz/cifar.html).
 
-Clasa 10 este formata din setul de date [manga109](http://www.manga109.org/en/).
+Clasa 10 este formata din setul de date [Manga109](http://www.manga109.org/en/).
 
 Clasele 11 si 12 sunt volumele 1, respectiv 2 din [Usogui](https://archive.org/details/manga-0v3r-usogui-v01-49-complete/Usogui).
 
@@ -57,5 +57,7 @@ Dupa un timp se vor afisa in consola doua adrese
 http://127.0.0.1:5000
 xxx.xxx.x.xxx:5000
 ```
-Accesati una dintre aceste adrese pentru a utiliza aplicatia
+Accesati una dintre aceste adrese pentru a utiliza aplicatia.
+
+Utilizati imaginile de test pentru a testa aplicatia.
 

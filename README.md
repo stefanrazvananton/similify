@@ -6,8 +6,8 @@ Testat pe Windows 10 si Ubuntu 24.04.1
 ### Environment recomandat:
 ```
 Python 3.10.15
-Pytorch 1.11.0 de modificat
-torchvision 0.12.0 de modificat
+Pytorch 2.5.1
+torchvision 0.20.1
 ```
 
 ### Pasi pentru instalare:

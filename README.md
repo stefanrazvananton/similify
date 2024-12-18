@@ -28,6 +28,13 @@ Descarcati dataset-ul procesat de pe [Google Drive](https://drive.google.com/dri
 
 Structura trebuie sa fie '.similify/imgs/0', '.similify/imgs/1', '.similify/imgs/2' ... 
 
+Clasele de la 0 la 9 sunt cele din setul de test de la [CIFAR-10](https://www.cs.toronto.edu/~kriz/cifar.html).
+
+Clasa 10 este formata din setul de date [manga109](http://www.manga109.org/en/).
+
+Clasele 11 si 12 sunt volumele 1, respectiv 2 din [Usogui](https://archive.org/details/manga-0v3r-usogui-v01-49-complete/Usogui).
+
+Clasele 13 si 14 sunt primele 1000 de imagini din setul de train pentru competitia [Dogs vs. Cats](https://www.kaggle.com/competitions/dogs-vs-cats/).
 
 ### Modelele preantrenate:
 Descarcati modelele preantrenate contrastiv de pe [Google Drive](https://drive.google.com/drive/folders/198Dfq5g0ZZbsjDYi6yu_KHf0VxQYGsoi?usp=sharing), si mutati-le in folder-ul './similify'
